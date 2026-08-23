@@ -564,12 +564,16 @@ def get_graph():
     database_url = os.getenv("DATABASE_URL")
 
     if database_url:
-        with PostgresSaver.from_conn_string(database_url) as saver:
-            saver.setup()
-            yield workflow.compile(checkpointer=saver)
-    else:
-        saver = MemorySaver()
-        yield workflow.compile(checkpointer=saver)
+        try:
+            with PostgresSaver.from_conn_string(database_url) as saver:
+                saver.setup()
+                yield workflow.compile(checkpointer=saver)
+                return
+        except Exception as e:
+            print(f"⚠️ PostgresSaver connection failed: {e}. Falling back to MemorySaver checkpointer.")
+
+    saver = MemorySaver()
+    yield workflow.compile(checkpointer=saver)
 
 
 def run_travel_agent(
