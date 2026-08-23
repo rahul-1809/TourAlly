@@ -559,6 +559,9 @@ workflow.add_conditional_edges(
 workflow.add_edge("finalize", END)
 
 
+_global_memory_saver = MemorySaver()
+
+
 @contextlib.contextmanager
 def get_graph():
     database_url = os.getenv("DATABASE_URL")
@@ -576,8 +579,7 @@ def get_graph():
         with PostgresSaver.from_conn_string(database_url) as saver:
             yield workflow.compile(checkpointer=saver)
     else:
-        saver = MemorySaver()
-        yield workflow.compile(checkpointer=saver)
+        yield workflow.compile(checkpointer=_global_memory_saver)
 
 
 def run_travel_agent(
