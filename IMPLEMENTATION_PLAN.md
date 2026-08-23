@@ -131,28 +131,28 @@
 ### Tasks
 
 #### 2.1 — Custom Weather MCP Server
-- [ ] `FastMCP("Weather MCP Server")`
-- [ ] `@mcp.tool() get_current_weather(city: str)` → OpenWeather current API
-- [ ] `@mcp.tool() get_weather_forecast(city: str, days: int)` → OpenWeather forecast API
-- [ ] Error handling: missing API key, city not found, network timeout
-- [ ] `if __name__ == "__main__": mcp.run()` for standalone execution
+- [x] `FastMCP("Weather MCP Server")`
+- [x] `@mcp.tool() get_current_weather(city: str)` → OpenWeather current API
+- [x] `@mcp.tool() get_weather_forecast(city: str, days: int)` → OpenWeather forecast API
+- [x] Error handling: missing API key, city not found, network timeout
+- [x] `if __name__ == "__main__": mcp.run()` for standalone execution
 
 #### 2.2 — Aviation MCP Configuration
-- [ ] Configure Aviation MCP via `MultiServerMCPClient` (streamable HTTP transport)
-- [ ] Connect to AviationStack MCP endpoint using `AVIATION_STACK_API_KEY`
-- [ ] Async helpers for `flight_agent`:
+- [x] Configure Aviation MCP via `MultiServerMCPClient` (streamable HTTP transport)
+- [x] Connect to AviationStack MCP endpoint using `AVIATION_STACK_API_KEY`
+- [x] Async helpers for `flight_agent`:
   - `aviation_get_flights(origin_iata, destination_iata, date)` → live flight list
   - `aviation_get_routes(origin, destination)` → route options
   - `aviation_get_schedules(flight_number)` → schedule details
-- [ ] `extract_iata_codes(origin_city, destination_city)` → IATA airport code lookup via LLM
-- [ ] Graceful fallback: if `AVIATION_STACK_API_KEY` missing or MCP fails → return `None` (flight_agent uses LLM)
+- [x] `extract_iata_codes(origin_city, destination_city)` → IATA airport code lookup via LLM
+- [x] Graceful fallback: if `AVIATION_STACK_API_KEY` missing or MCP fails → return `None` (flight_agent uses LLM)
 
 #### 2.3 — Tavily & Combined MCP Client
-- [ ] `MultiServerMCPClient` config:
+- [x] `MultiServerMCPClient` config:
   - `aviation`: streamable HTTP → Aviation MCP endpoint
   - `tavily`: streamable HTTP → `https://mcp.tavily.com/mcp/?tavilyApiKey=...`
   - `weather`: stdio → `python custom_weather_mcp_server.py`
-- [ ] Async helpers (called via `asyncio.run()` from sync agent nodes):
+- [x] Async helpers (called via `asyncio.run()` from sync agent nodes):
   - `tavily_mcp_search(query, max_results=5)` → hotel / budget searches
   - `weather_mcp_search(city)` → current conditions string
   - `forecast_mcp_search(city, days=5)` → forecast string

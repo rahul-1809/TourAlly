@@ -1,3 +1,4 @@
+import asyncio
 import contextlib
 import json
 import operator
@@ -15,6 +16,13 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command, interrupt
+from mcp_client import (
+    tavily_mcp_search,
+    weather_mcp_search,
+    forecast_mcp_search,
+    aviation_get_flights,
+    extract_iata_codes,
+)
 
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
@@ -412,45 +420,98 @@ def specialists_node(state: TravelState) -> dict[str, Any]:
     updates: dict[str, Any] = {}
     llm_calls = state.get("llm_calls", 0)
 
-    specialist_prompts = {
-        "flight_agent": (
-            "You are a flight specialist agent. Suggest suitable flight options, "
-            "airline carriers, routes, schedules, and approximate price ranges. "
-            "Clearly label estimates. Return a clear Markdown summary.",
-            "flight_results",
-        ),
-        "hotel_agent": (
-            "You are a hotel specialist agent. Suggest suitable accommodation "
-            "types, neighborhoods, and hotel recommendations. Clearly label "
-            "availability and price estimates. Return a clear Markdown summary.",
-            "hotel_results",
-        ),
-        "weather_agent": (
-            "You are a weather specialist agent. Provide expected weather "
-            "information for the destination and travel period. Clearly state "
-            "that future weather must be verified with a live weather service. "
-            "Return a clear Markdown summary.",
-            "weather_results",
-        ),
-        "budget_agent": (
-            "You are a travel budget specialist. Estimate transportation, hotels, "
-            "food, activities, local transport, and contingency costs. Clearly "
-            "label assumptions and estimates. Return a clear Markdown summary.",
-            "budget_results",
-        ),
-    }
-
-    for agent in selected:
-        prompt_data = specialist_prompts.get(agent)
-        if not prompt_data:
-            continue
-
-        system_prompt, result_key = prompt_data
+    # 1. Flight Agent
+    if "flight_agent" in selected:
+        origin = constraints.get("origin", "")
+        destination = constraints.get("destination", "")
+        flight_data = "No flights retrieved."
+        
+        if origin and destination:
+            iata_codes = extract_iata_codes(origin, destination)
+            origin_iata = iata_codes.get("origin_iata")
+            dest_iata = iata_codes.get("destination_iata")
+            if origin_iata and dest_iata:
+                try:
+                    flight_data = asyncio.run(aviation_get_flights(origin_iata, dest_iata))
+                except Exception as e:
+                    flight_data = f"Error fetching flight data: {e}"
+        
+        system_prompt = (
+            "You are a flight specialist agent. Based on these constraints: {constraints} and the real-time flight details: {flight_data}, suggest suitable flight options, airline carriers, routes, and price ranges. Return the response as a clear markdown summary."
+        )
+        system_prompt = system_prompt.replace("{constraints}", json.dumps(constraints, ensure_ascii=False)).replace("{flight_data}", flight_data)
+        
         result = _llm_text(
             system_prompt,
-            f"Constraints: {json.dumps(constraints, ensure_ascii=False)}",
+            f"Constraints: {json.dumps(constraints, ensure_ascii=False)}"
         )
-        updates[result_key] = result
+        updates["flight_results"] = result
+        llm_calls += 2
+
+    # 2. Hotel Agent
+    if "hotel_agent" in selected:
+        destination = constraints.get("destination", "")
+        hotel_data = "No hotel search data retrieved."
+        if destination:
+            try:
+                hotel_data = asyncio.run(tavily_mcp_search(f"best hotels and neighborhoods in {destination}"))
+            except Exception as e:
+                hotel_data = f"Error fetching hotel data: {e}"
+                
+        system_prompt = (
+            "You are a hotel specialist agent. Based on these constraints: {constraints} and the Tavily search results: {hotel_data}, suggest suitable accommodation options, neighborhoods, and hotel recommendations. Return the response as a clear markdown summary."
+        )
+        system_prompt = system_prompt.replace("{constraints}", json.dumps(constraints, ensure_ascii=False)).replace("{hotel_data}", hotel_data)
+        
+        result = _llm_text(
+            system_prompt,
+            f"Constraints: {json.dumps(constraints, ensure_ascii=False)}"
+        )
+        updates["hotel_results"] = result
+        llm_calls += 1
+
+    # 3. Weather Agent
+    if "weather_agent" in selected:
+        destination = constraints.get("destination", "")
+        weather_data = "No weather forecast retrieved."
+        if destination:
+            try:
+                weather_data = asyncio.run(forecast_mcp_search(destination, days=3))
+            except Exception as e:
+                weather_data = f"Error fetching weather forecast: {e}"
+                
+        system_prompt = (
+            "You are a weather specialist agent. Based on these constraints: {constraints} and the weather forecast: {weather_data}, provide useful expected weather information for the destination. Return the response as a clear markdown summary."
+        )
+        system_prompt = system_prompt.replace("{constraints}", json.dumps(constraints, ensure_ascii=False)).replace("{weather_data}", weather_data)
+        
+        result = _llm_text(
+            system_prompt,
+            f"Constraints: {json.dumps(constraints, ensure_ascii=False)}"
+        )
+        updates["weather_results"] = result
+        llm_calls += 1
+
+    # 4. Budget Agent
+    if "budget_agent" in selected:
+        destination = constraints.get("destination", "")
+        budget_data = "No budget search data retrieved."
+        if destination:
+            try:
+                budget_data = asyncio.run(tavily_mcp_search(f"typical daily budget activities and local transport costs in {destination}"))
+            except Exception as e:
+                budget_data = f"Error fetching budget data: {e}"
+                
+        system_prompt = (
+            "You are a travel budget specialist. Based on these constraints: {constraints} and the typical costs context: {budget_data}, estimate the total trip cost. Include transportation, accommodation, activities, local transport, and contingency. Return a clear markdown summary."
+        )
+        system_prompt = system_prompt.replace("{constraints}", json.dumps(constraints, ensure_ascii=False)).replace("{budget_data}", budget_data)
+        
+        result = _llm_text(
+            system_prompt,
+            f"Constraints: {json.dumps(constraints, ensure_ascii=False)}"
+        )
+        updates["budget_results"] = result
         llm_calls += 1
 
     updates["llm_calls"] = llm_calls
