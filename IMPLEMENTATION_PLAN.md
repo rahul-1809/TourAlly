@@ -18,28 +18,6 @@
 | 6 | Integration & End-to-End Testing | Connect frontend to backend, fix edge cases | 1–2 hrs |
 | 7 | Polish & Production Readiness | Docker, env validation, README, deployment guide | 1 hr |
 
-### Timeline (Gantt)
-
-```mermaid
-gantt
-    title TourAlly Build Timeline
-    dateFormat  HH:mm
-    axisFormat  Phase %H
-
-    section Backend
-    Phase 0 - Setup & Tooling          :p0, 00:00, 30m
-    Phase 1 - LangGraph Agent Logic    :p1, after p0, 4h
-    Phase 2 - MCP Integration          :p2, after p1, 2h
-    Phase 3 - FastAPI Layer            :p3, after p2, 1h
-
-    section Frontend
-    Phase 4 - React Foundation         :p4, after p3, 2h
-    Phase 5 - React Components         :p5, after p4, 3h
-
-    section QA & Release
-    Phase 6 - Integration Testing      :p6, after p5, 2h
-    Phase 7 - Polish & Production      :p7, after p6, 1h
-```
 
 ## Phase 0 — Project Setup & Tooling
 

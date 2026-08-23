@@ -1,0 +1,31 @@
+# ─── Core LLM & Agent Framework ───────────────────────────
+langgraph==0.2.70
+langchain==0.3.25
+langchain-groq==0.2.5
+langchain-core==0.3.58
+
+# ─── LangGraph Checkpointing ──────────────────────────────
+langgraph-checkpoint-postgres==2.0.21
+
+# ─── MCP Integration ──────────────────────────────────────
+langchain-mcp-adapters==0.0.9
+mcp>=1.4.1,<1.7
+
+# ─── Observability ────────────────────────────────────────
+langsmith>=0.3.0
+
+
+# ─── API Server ───────────────────────────────────────────
+fastapi==0.115.12
+uvicorn[standard]==0.34.3
+python-multipart==0.0.20
+
+# ─── Database ─────────────────────────────────────────────
+psycopg[binary]==3.2.9
+
+# ─── Utilities ────────────────────────────────────────────
+python-dotenv==1.1.0
+nest-asyncio==1.6.0
+requests==2.32.3
+pydantic==2.11.3
+httpx==0.28.1
