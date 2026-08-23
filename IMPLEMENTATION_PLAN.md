@@ -212,15 +212,15 @@
 
 ### Tasks
 
-- [ ] Configure Vite proxy for `/api` → `http://localhost:8000`
-- [ ] Set up `global.css` with:
+- [x] Configure Vite proxy for `/api` → `http://localhost:8000`
+- [x] Set up `global.css` with:
   - CSS custom properties: colour palette (dark mode), spacing scale, border radius, shadows
   - Google Fonts import: Inter (weights 300, 400, 500, 600, 700)
   - CSS reset + `box-sizing: border-box`
   - Animated gradient mesh background
   - Scrollbar styling
-- [ ] `App.jsx`: manage top-level state (`threadId`, `status`, `messages`, `itinerary`, `awaitingApproval`)
-- [ ] API module `travel.js`:
+- [x] `App.jsx`: manage top-level state (`threadId`, `status`, `messages`, `itinerary`, `awaitingApproval`)
+- [x] API module `travel.js`:
   - `startTrip(message, threadId?)` → `POST /api/travel`
   - `approveTrip(threadId, approved, feedback?)` → `POST /api/travel/approve`
   - `checkHealth()` → `GET /health`
@@ -248,44 +248,44 @@
 ### Tasks
 
 #### 5.1 — Header Component
-- [ ] App logo + name "TourAlly"
-- [ ] Status badge (idle / planning / awaiting approval / completed)
-- [ ] "New Trip" button to reset state
+- [x] App logo + name "TourAlly"
+- [x] Status badge (idle / planning / awaiting approval / completed)
+- [x] "New Trip" button to reset state
 
 #### 5.2 — TripForm Component
-- [ ] Large textarea for travel query input
-- [ ] Example prompt suggestions (chips)
-- [ ] Submit button with loading spinner
-- [ ] Disabled state while agents are running
+- [x] Large textarea for travel query input
+- [x] Example prompt suggestions (chips)
+- [x] Submit button with loading spinner
+- [x] Disabled state while agents are running
 
 #### 5.3 — AgentSteps Component
-- [ ] Vertical stepper with one step per agent
-- [ ] Colour-coded agent icons (✈️ flight, 🏨 hotel, 🌤️ weather, 💰 budget, 🗺️ itinerary)
-- [ ] States: pending (grey) → running (animated pulse) → completed (green) → skipped (muted)
-- [ ] Expandable result preview per agent
-- [ ] CSS animation: slide-in when step appears
+- [x] Vertical stepper with one step per agent
+- [x] Colour-coded agent icons (✈️ flight, 🏨 hotel, 🌤️ weather, 💰 budget, 🗺️ itinerary)
+- [x] States: pending (grey) → running (animated pulse) → completed (green) → skipped (muted)
+- [x] Expandable result preview per agent
+- [x] CSS animation: slide-in when step appears
 
 #### 5.4 — HitlPanel Component
-- [ ] Appears when `awaitingApproval=true`
-- [ ] Displays the draft itinerary summary
-- [ ] **Approve** button (green gradient, prominent)
-- [ ] **Request Revision** button (outline style)
-- [ ] Revision feedback textarea (shown only when revision selected)
-- [ ] Submit revision button
-- [ ] Glassmorphism card with attention-drawing border animation
+- [x] Appears when `awaitingApproval=true`
+- [x] Displays the draft itinerary summary
+- [x] **Approve** button (green gradient, prominent)
+- [x] **Request Revision** button (outline style)
+- [x] Revision feedback textarea (shown only when revision selected)
+- [x] Submit revision button
+- [x] Glassmorphism card with attention-drawing border animation
 
 #### 5.5 — ItineraryCard Component
-- [ ] Renders markdown itinerary (use `react-markdown` + `remark-gfm`)
-- [ ] Day-by-day sections with collapsible accordions
-- [ ] Print/Export button
-- [ ] "Plan Another Trip" CTA
+- [x] Renders markdown itinerary (use `react-markdown` + `remark-gfm`)
+- [x] Day-by-day sections with collapsible accordions
+- [x] Print/Export button
+- [x] "Plan Another Trip" CTA
 
 #### 5.6 — ChatPanel Component
-- [ ] Scrollable message feed
-- [ ] User messages (right-aligned)
-- [ ] Agent/system messages (left-aligned, with agent avatar)
-- [ ] Guardrail block message with warning styling
-- [ ] Auto-scroll to bottom on new messages
+- [x] Scrollable message feed
+- [x] User messages (right-aligned)
+- [x] Agent/system messages (left-aligned, with agent avatar)
+- [x] Guardrail block message with warning styling
+- [x] Auto-scroll to bottom on new messages
 
 ### Acceptance Criteria
 - All components render without console errors
