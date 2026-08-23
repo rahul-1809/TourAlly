@@ -20,14 +20,8 @@ function App() {
     langsmith_observability: false
   })
 
-  // Trip form input state
-  const [formData, setFormData] = useState({
-    origin: 'London',
-    destination: 'Paris',
-    duration: '3',
-    budget: '1500',
-    style: 'balanced'
-  })
+  // Chat input state
+  const [userQuery, setUserQuery] = useState("")
 
   // Fetch health integrations on load
   useEffect(() => {
@@ -49,26 +43,26 @@ function App() {
   }
 
   // Handle trip planning submission
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    if (!formData.destination || !formData.origin || !formData.budget) {
-      appendLog('error', 'Please fill in origin, destination, and budget constraints.')
+  const handleSubmit = (e, overrideQuery = null) => {
+    if (e) e.preventDefault()
+    const queryToUse = overrideQuery || userQuery
+    if (!queryToUse || !queryToUse.trim()) {
       return
     }
 
+    const messageToSend = queryToUse.trim()
+    setUserQuery("")
     setStatus('loading')
     setItinerary("")
     setFeedback("")
     
     // Log initiation sequence
     setMessages([
-      { type: 'system', text: `Initiating session: Trip planning to ${formData.destination} from ${formData.origin}.`, time: new Date().toLocaleTimeString() },
+      { type: 'system', text: `Initiated session with query: "${messageToSend}"`, time: new Date().toLocaleTimeString() },
       { type: 'system', text: '🔍 Guardrail checking query parameters...', time: new Date().toLocaleTimeString() }
     ])
-
-    const queryMessage = `Plan a ${formData.duration}-day trip to ${formData.destination} from ${formData.origin} with a budget of $${formData.budget} and a ${formData.style} travel style.`
     
-    startTrip(queryMessage, threadId)
+    startTrip(messageToSend, threadId)
       .then(res => {
         setThreadId(res.thread_id)
         setAgentsRun(res.agents_run || [])
@@ -212,77 +206,87 @@ function App() {
         {/* Left Column: Form & Logs */}
         <div className="left-column">
           
-          {/* Trip Request Form */}
+          {/* Conversational Travel Prompt Input */}
           <section className="glass-panel trip-form-panel">
-            <h2 className="panel-title">🗺️ New Trip Parameters</h2>
+            <h2 className="panel-title">💬 Plan Your Journey</h2>
             <form onSubmit={handleSubmit}>
-              <div className="form-grid">
-                <div className="form-field">
-                  <label className="form-label">Leaving From</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={formData.origin}
-                    onChange={e => setFormData(prev => ({ ...prev, origin: e.target.value }))}
-                    placeholder="City, e.g. London"
-                    disabled={status === 'loading'}
-                  />
-                </div>
-                
-                <div className="form-field">
-                  <label className="form-label">Going To</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={formData.destination}
-                    onChange={e => setFormData(prev => ({ ...prev, destination: e.target.value }))}
-                    placeholder="City, e.g. Paris"
-                    disabled={status === 'loading'}
-                  />
-                </div>
+              <div className="form-field" style={{ marginBottom: '16px' }}>
+                <label className="form-label" style={{ marginBottom: '8px' }}>Ask anything or describe your trip</label>
+                <textarea 
+                  className="form-input" 
+                  style={{ minHeight: '110px', resize: 'vertical' }}
+                  value={userQuery}
+                  onChange={e => setUserQuery(e.target.value)}
+                  placeholder="e.g. Plan a 3-day trip to Paris from London with a $1500 budget"
+                  disabled={status === 'loading'}
+                />
+              </div>
 
-                <div className="form-field">
-                  <label className="form-label">Trip Budget ($)</label>
-                  <input 
-                    type="number" 
-                    className="form-input" 
-                    value={formData.budget}
-                    onChange={e => setFormData(prev => ({ ...prev, budget: e.target.value }))}
-                    placeholder="e.g. 1500"
-                    disabled={status === 'loading'}
-                  />
-                </div>
-
-                <div className="form-field">
-                  <label className="form-label">Duration (Days)</label>
-                  <select 
-                    className="form-input form-select"
-                    value={formData.duration}
-                    onChange={e => setFormData(prev => ({ ...prev, duration: e.target.value }))}
-                    disabled={status === 'loading'}
-                  >
-                    <option value="1">1 Day</option>
-                    <option value="2">2 Days</option>
-                    <option value="3">3 Days</option>
-                    <option value="4">4 Days</option>
-                    <option value="5">5 Days</option>
-                  </select>
-                </div>
-
-                <div className="form-field full-width">
-                  <label className="form-label">Travel Profile</label>
-                  <select 
-                    className="form-input form-select"
-                    value={formData.style}
-                    onChange={e => setFormData(prev => ({ ...prev, style: e.target.value }))}
-                    disabled={status === 'loading'}
-                  >
-                    <option value="balanced">Balanced / Sightseeing</option>
-                    <option value="budget">Backpacker / Low Cost</option>
-                    <option value="luxury">Luxury / Premium</option>
-                    <option value="adventure">Active / Adventure</option>
-                  </select>
-                </div>
+              <div className="suggestion-chips" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+                <button 
+                  type="button" 
+                  onClick={() => handleSubmit(null, "Plan a 3-day trip to Paris from London with $1500 budget")}
+                  disabled={status === 'loading'}
+                  style={{
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-secondary)',
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    fontSize: '11.5px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  🗼 3-Day Paris from London ($1500)
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => handleSubmit(null, "What is the weather in Tokyo?")}
+                  disabled={status === 'loading'}
+                  style={{
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-secondary)',
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    fontSize: '11.5px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  🌤️ Weather in Tokyo
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => handleSubmit(null, "Tell me a programming joke")}
+                  disabled={status === 'loading'}
+                  style={{
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-secondary)',
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    fontSize: '11.5px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  🤡 Programming Joke (Guardrail Test)
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => handleSubmit(null, "Search flights from Heathrow to Charles De Gaulle")}
+                  disabled={status === 'loading'}
+                  style={{
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-secondary)',
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    fontSize: '11.5px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  ✈️ Flights LHR ➔ CDG
+                </button>
               </div>
 
               <button 
@@ -290,7 +294,7 @@ function App() {
                 className="submit-btn"
                 disabled={status === 'loading'}
               >
-                {status === 'loading' ? 'Generating Itinerary...' : 'Build Custom Plan'}
+                {status === 'loading' ? 'Orchestrating Agent Network...' : 'Analyze Travel Prompt'}
               </button>
             </form>
           </section>
