@@ -62,7 +62,7 @@
 ### Tasks
 
 #### 1.1 — State Definition
-- [ ] Define `TravelState` TypedDict with all fields:
+- [x] Define `TravelState` TypedDict with all fields:
   - `messages` (annotated with `operator.add`)
   - `user_query`, `guardrail_allowed`, `guardrail_reason`
   - `selected_agents`, `trip_constraints`, `supervisor_reasoning`
@@ -71,43 +71,43 @@
   - `llm_calls`
 
 #### 1.2 — LLM Helper Functions
-- [ ] `_llm_text(system_prompt, user_prompt)` → invoke Groq LLaMA
-- [ ] `_json_from_llm(text)` → extract first valid JSON object from LLM response
-- [ ] `_empty_constraints()` → default trip constraints dict
+- [x] `_llm_text(system_prompt, user_prompt)` → invoke Groq LLaMA
+- [x] `_json_from_llm(text)` → extract first valid JSON object from LLM response
+- [x] `_empty_constraints()` → default trip constraints dict
 
 #### 1.3 — Supervisor + Guardrail Node
-- [ ] LLM guardrail: validates query is travel-related; returns `allowed` + `reason`
-- [ ] On blocked: return early with `guardrail_allowed=False`, `final_response=reason`
-- [ ] LLM supervisor: selects which agents to run from `KNOWN_AGENTS`
-- [ ] LLM extracts `trip_constraints` (destination, origin, duration, budget, travel_style)
+- [x] LLM guardrail: validates query is travel-related; returns `allowed` + `reason`
+- [x] On blocked: return early with `guardrail_allowed=False`, `final_response=reason`
+- [x] LLM supervisor: selects which agents to run from `KNOWN_AGENTS`
+- [x] LLM extracts `trip_constraints` (destination, origin, duration, budget, travel_style)
 
 #### 1.4 — Specialist Agent Nodes
-- [ ] `flight_agent` — uses MCP/Tavily to find flights; falls back to LLM if no key
-- [ ] `hotel_agent` — uses MCP/Tavily to find hotels; falls back to LLM
-- [ ] `weather_agent` — uses Weather MCP; falls back to LLM
-- [ ] `budget_agent` — LLM cost estimation + feasibility
+- [x] `flight_agent` — uses MCP/Tavily to find flights; falls back to LLM if no key
+- [x] `hotel_agent` — uses MCP/Tavily to find hotels; falls back to LLM
+- [x] `weather_agent` — uses Weather MCP; falls back to LLM
+- [x] `budget_agent` — LLM cost estimation + feasibility
 
 #### 1.5 — Itinerary Agent Node
-- [ ] Synthesises all specialist results into a structured day-by-day itinerary
-- [ ] Uses markdown formatting (headings, bullet lists, emojis)
-- [ ] Generates `approval_request` summary for the HITL panel
+- [x] Synthesises all specialist results into a structured day-by-day itinerary
+- [x] Uses markdown formatting (headings, bullet lists, emojis)
+- [x] Generates `approval_request` summary for the HITL panel
 
 #### 1.6 — HITL Node
-- [ ] Calls `interrupt(approval_request)` — pauses graph execution
-- [ ] On resume: reads `approved` and `human_feedback` from state
-- [ ] Routes to `finalize` (approved) or back to `itinerary_agent` (revision)
+- [x] Calls `interrupt(approval_request)` — pauses graph execution
+- [x] On resume: reads `approved` and `human_feedback` from state
+- [x] Routes to `finalize` (approved) or back to `itinerary_agent` (revision)
 
 #### 1.7 — Graph Assembly
-- [ ] `StateGraph` → add all nodes
-- [ ] Edges: `START → supervisor_agent`
-- [ ] Conditional edge from `supervisor_agent` → (blocked: END) or (allowed: specialist agents)
-- [ ] Conditional edges per agent (run if selected, skip otherwise)
-- [ ] `itinerary_agent → hitl_approval → finalize → END`
-- [ ] Compile graph with `PostgresSaver` (or `MemorySaver` fallback)
+- [x] `StateGraph` → add all nodes
+- [x] Edges: `START → supervisor_agent`
+- [x] Conditional edge from `supervisor_agent` → (blocked: END) or (allowed: specialist agents)
+- [x] Conditional edges per agent (run if selected, skip otherwise)
+- [x] `itinerary_agent → hitl_approval → finalize → END`
+- [x] Compile graph with `PostgresSaver` (or `MemorySaver` fallback)
 
 #### 1.8 — Public API Wrappers
-- [ ] `run_travel_agent(message, thread_id=None)` → `dict` with status + content
-- [ ] `resume_travel_agent(thread_id, approved, feedback="")` → `dict`
+- [x] `run_travel_agent(message, thread_id=None)` → `dict` with status + content
+- [x] `resume_travel_agent(thread_id, approved, feedback="")` → `dict`
 
 ### Acceptance Criteria
 - `python -c "from backend import run_travel_agent; print(run_travel_agent('Plan a trip to Paris'))"` returns a dict
