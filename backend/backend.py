@@ -562,18 +562,22 @@ workflow.add_edge("finalize", END)
 @contextlib.contextmanager
 def get_graph():
     database_url = os.getenv("DATABASE_URL")
+    use_postgres = False
 
     if database_url:
         try:
             with PostgresSaver.from_conn_string(database_url) as saver:
                 saver.setup()
-                yield workflow.compile(checkpointer=saver)
-                return
+            use_postgres = True
         except Exception as e:
             print(f"⚠️ PostgresSaver connection failed: {e}. Falling back to MemorySaver checkpointer.")
 
-    saver = MemorySaver()
-    yield workflow.compile(checkpointer=saver)
+    if use_postgres:
+        with PostgresSaver.from_conn_string(database_url) as saver:
+            yield workflow.compile(checkpointer=saver)
+    else:
+        saver = MemorySaver()
+        yield workflow.compile(checkpointer=saver)
 
 
 def run_travel_agent(
@@ -585,62 +589,74 @@ def run_travel_agent(
 
     config = {"configurable": {"thread_id": thread_id}}
 
-    with get_graph() as graph:
-        graph.invoke(
-            {
-                "user_query": message,
-                "messages": [HumanMessage(content=message)],
-                "llm_calls": 0,
-            },
-            config,
-        )
+    try:
+        with get_graph() as graph:
+            graph.invoke(
+                {
+                    "user_query": message,
+                    "messages": [HumanMessage(content=message)],
+                    "llm_calls": 0,
+                },
+                config,
+            )
 
-        state = graph.get_state(config)
+            state = graph.get_state(config)
 
-        if state.values.get("guardrail_allowed") is False:
+            if state.values.get("guardrail_allowed") is False:
+                return {
+                    "thread_id": thread_id,
+                    "status": "blocked",
+                    "content": state.values.get(
+                        "final_response",
+                        "Query blocked by guardrail.",
+                    ),
+                    "awaiting_approval": False,
+                    "agents_run": ["supervisor_agent"],
+                }
+
+            is_awaiting = bool(
+                state.next and "hitl_approval" in state.next
+            )
+
+            if is_awaiting:
+                return {
+                    "thread_id": thread_id,
+                    "status": "awaiting_approval",
+                    "content": state.values.get(
+                        "approval_request",
+                        "Review travel plan",
+                    ),
+                    "itinerary": state.values.get("itinerary", ""),
+                    "awaiting_approval": True,
+                    "agents_run": (
+                        ["supervisor_agent"]
+                        + state.values.get("selected_agents", [])
+                        + ["itinerary_agent"]
+                    ),
+                }
+
             return {
                 "thread_id": thread_id,
-                "status": "blocked",
-                "content": state.values.get(
-                    "final_response",
-                    "Query blocked by guardrail.",
-                ),
+                "status": "completed",
+                "content": state.values.get("final_response", ""),
                 "awaiting_approval": False,
-                "agents_run": ["supervisor_agent"],
-            }
-
-        is_awaiting = bool(
-            state.next and "hitl_approval" in state.next
-        )
-
-        if is_awaiting:
-            return {
-                "thread_id": thread_id,
-                "status": "awaiting_approval",
-                "content": state.values.get(
-                    "approval_request",
-                    "Review travel plan",
-                ),
-                "itinerary": state.values.get("itinerary", ""),
-                "awaiting_approval": True,
                 "agents_run": (
                     ["supervisor_agent"]
                     + state.values.get("selected_agents", [])
-                    + ["itinerary_agent"]
+                    + ["itinerary_agent", "finalize"]
                 ),
             }
-
-        return {
-            "thread_id": thread_id,
-            "status": "completed",
-            "content": state.values.get("final_response", ""),
-            "awaiting_approval": False,
-            "agents_run": (
-                ["supervisor_agent"]
-                + state.values.get("selected_agents", [])
-                + ["itinerary_agent", "finalize"]
-            ),
-        }
+    except Exception as e:
+        error_msg = str(e).lower()
+        if any(term in error_msg for term in ("nodename nor servname", "gai_error", "connection refused", "timeout", "offline")):
+            return {
+                "thread_id": thread_id,
+                "status": "blocked",
+                "content": "⚠️ Network Offline or Host Resolution Error. Please verify your internet connection and check if Groq/Supabase is reachable.",
+                "awaiting_approval": False,
+                "agents_run": []
+            }
+        raise e
 
 
 def resume_travel_agent(
@@ -650,40 +666,52 @@ def resume_travel_agent(
 ) -> dict[str, Any]:
     config = {"configurable": {"thread_id": thread_id}}
 
-    with get_graph() as graph:
-        graph.invoke(
-            Command(
-                resume={
-                    "approved": approved,
-                    "feedback": feedback,
+    try:
+        with get_graph() as graph:
+            graph.invoke(
+                Command(
+                    resume={
+                        "approved": approved,
+                        "feedback": feedback,
+                    }
+                ),
+                config,
+            )
+
+            state = graph.get_state(config)
+
+            is_awaiting = bool(
+                state.next and "hitl_approval" in state.next
+            )
+
+            if is_awaiting:
+                return {
+                    "thread_id": thread_id,
+                    "status": "awaiting_approval",
+                    "content": state.values.get(
+                        "approval_request",
+                        "Review travel plan",
+                    ),
+                    "itinerary": state.values.get("itinerary", ""),
+                    "awaiting_approval": True,
+                    "agents_run": ["itinerary_agent"],
                 }
-            ),
-            config,
-        )
 
-        state = graph.get_state(config)
-
-        is_awaiting = bool(
-            state.next and "hitl_approval" in state.next
-        )
-
-        if is_awaiting:
             return {
                 "thread_id": thread_id,
-                "status": "awaiting_approval",
-                "content": state.values.get(
-                    "approval_request",
-                    "Review travel plan",
-                ),
-                "itinerary": state.values.get("itinerary", ""),
-                "awaiting_approval": True,
-                "agents_run": ["itinerary_agent"],
+                "status": "completed",
+                "content": state.values.get("final_response", ""),
+                "awaiting_approval": False,
+                "agents_run": ["finalize"],
             }
-
-        return {
-            "thread_id": thread_id,
-            "status": "completed",
-            "content": state.values.get("final_response", ""),
-            "awaiting_approval": False,
-            "agents_run": ["finalize"],
-        }
+    except Exception as e:
+        error_msg = str(e).lower()
+        if any(term in error_msg for term in ("nodename nor servname", "gai_error", "connection refused", "timeout", "offline")):
+            return {
+                "thread_id": thread_id,
+                "status": "blocked",
+                "content": "⚠️ Network Offline or Host Resolution Error. Please verify your internet connection and check if Groq/Supabase is reachable.",
+                "awaiting_approval": False,
+                "agents_run": []
+            }
+        raise e
