@@ -175,20 +175,20 @@
 
 ### Tasks
 
-- [ ] Create FastAPI app with title, description, CORS middleware (allow React dev origin `http://localhost:5173`)
-- [ ] Apply `nest_asyncio.apply()` for sync-in-async compatibility
-- [ ] `POST /api/travel` endpoint:
+- [x] Create FastAPI app with title, description, CORS middleware (allow React dev origin `http://localhost:5173`)
+- [x] Apply `nest_asyncio.apply()` for sync-in-async compatibility
+- [x] `POST /api/travel` endpoint:
   - Body: `{ message: str, thread_id?: str }`
   - Auto-generate `thread_id` if not provided
   - Call `run_travel_agent(message, thread_id)`
   - Return `{ thread_id, status, content, awaiting_approval, agents_run }`
-- [ ] `POST /api/travel/approve` endpoint:
+- [x] `POST /api/travel/approve` endpoint:
   - Body: `{ thread_id: str, approved: bool, feedback?: str }`
   - Call `resume_travel_agent(thread_id, approved, feedback)`
   - Return same structure as `/api/travel`
-- [ ] `GET /health` endpoint → `{ status: "ok", features: [...] }`
-- [ ] Global exception handler → clean JSON error responses
-- [ ] Startup event: run `PostgresSaver.setup()` and DB migrations
+- [x] `GET /health` endpoint → `{ status: "ok", features: [...] }`
+- [x] Global exception handler → clean JSON error responses
+- [x] Startup event: run `PostgresSaver.setup()` and DB migrations
 
 ### Acceptance Criteria
 - `uvicorn app:app --reload` starts on port 8000
