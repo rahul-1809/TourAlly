@@ -28,17 +28,17 @@
 
 ### Tasks
 
-- [ ] Create `backend/` and `frontend/` directories in TourAlly root
-- [ ] Create `backend/requirements.txt` with all pinned dependencies (add `langsmith`)
-- [ ] Create `backend/.env.example` template (include all LangSmith + AviationStack vars)
-- [ ] Create `backend/.gitignore` (exclude `.env`, `__pycache__`, `.venv`)
-- [ ] Create `frontend/` via `npx create-vite@latest ./ --template react`
-- [ ] Configure `frontend/vite.config.js` proxy (`/api` → `http://localhost:8000`)
-- [ ] Create `backend/migrations/001_init.sql` for app-level tables
-- [ ] Create `backend/migrations/run_migrations.py` helper script
-- [ ] Verify Supabase `DATABASE_URL` connection with a test script
-- [ ] Set up LangSmith project at [smith.langchain.com](https://smith.langchain.com)
-- [ ] Add `LANGCHAIN_TRACING_V2=true`, `LANGCHAIN_API_KEY`, `LANGCHAIN_PROJECT=TourAlly` to `.env`
+- [x] Create `backend/` and `frontend/` directories in TourAlly root
+- [x] Create `backend/requirements.txt` with all pinned dependencies (add `langsmith`)
+- [x] Create `backend/.env.example` template (include all LangSmith + AviationStack vars)
+- [x] Create `backend/.gitignore` (exclude `.env`, `__pycache__`, `.venv`)
+- [x] Create `frontend/` via `npx create-vite@latest ./ --template react`
+- [x] Configure `frontend/vite.config.js` proxy (`/api` → `http://localhost:8000`)
+- [x] Create `backend/migrations/001_init.sql` for app-level tables
+- [x] Create `backend/migrations/run_migrations.py` helper script
+- [x] Verify Supabase `DATABASE_URL` connection with a test script
+- [x] Set up LangSmith project at [smith.langchain.com](https://smith.langchain.com)
+- [x] Add `LANGCHAIN_TRACING_V2=true`, `LANGCHAIN_API_KEY`, `LANGCHAIN_PROJECT=TourAlly` to `.env`
 
 ### Acceptance Criteria
 - `cd backend && python -c "import langgraph, langchain_groq, fastapi, langsmith; print('OK')"` passes
