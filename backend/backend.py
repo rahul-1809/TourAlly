@@ -437,7 +437,7 @@ def specialists_node(state: TravelState) -> dict[str, Any]:
                     flight_data = f"Error fetching flight data: {e}"
         
         system_prompt = (
-            "You are a flight specialist agent. Based on these constraints: {constraints} and the real-time flight details: {flight_data}, suggest suitable flight options, airline carriers, routes, and price ranges. Return the response as a clear markdown summary."
+            "You are a flight specialist agent. Based on these constraints: {constraints} and the real-time flight details: {flight_data}, suggest suitable flight options, airline carriers, routes, and price ranges. Keep your response extremely concise (max 200 words) and output a clear markdown summary."
         )
         system_prompt = system_prompt.replace("{constraints}", json.dumps(constraints, ensure_ascii=False)).replace("{flight_data}", flight_data)
         
@@ -459,7 +459,7 @@ def specialists_node(state: TravelState) -> dict[str, Any]:
                 hotel_data = f"Error fetching hotel data: {e}"
                 
         system_prompt = (
-            "You are a hotel specialist agent. Based on these constraints: {constraints} and the Tavily search results: {hotel_data}, suggest suitable accommodation options, neighborhoods, and hotel recommendations. Return the response as a clear markdown summary."
+            "You are a hotel specialist agent. Based on these constraints: {constraints} and the Tavily search results: {hotel_data}, suggest suitable accommodation options, neighborhoods, and hotel recommendations. Keep your response extremely concise (max 200 words) and output a clear markdown summary."
         )
         system_prompt = system_prompt.replace("{constraints}", json.dumps(constraints, ensure_ascii=False)).replace("{hotel_data}", hotel_data)
         
@@ -481,7 +481,7 @@ def specialists_node(state: TravelState) -> dict[str, Any]:
                 weather_data = f"Error fetching weather forecast: {e}"
                 
         system_prompt = (
-            "You are a weather specialist agent. Based on these constraints: {constraints} and the weather forecast: {weather_data}, provide useful expected weather information for the destination. Return the response as a clear markdown summary."
+            "You are a weather specialist agent. Based on these constraints: {constraints} and the weather forecast: {weather_data}, provide useful expected weather information for the destination. Keep your response extremely concise (max 150 words) and output a clear markdown summary."
         )
         system_prompt = system_prompt.replace("{constraints}", json.dumps(constraints, ensure_ascii=False)).replace("{weather_data}", weather_data)
         
@@ -503,7 +503,7 @@ def specialists_node(state: TravelState) -> dict[str, Any]:
                 budget_data = f"Error fetching budget data: {e}"
                 
         system_prompt = (
-            "You are a travel budget specialist. Based on these constraints: {constraints} and the typical costs context: {budget_data}, estimate the total trip cost. Include transportation, accommodation, activities, local transport, and contingency. Return a clear markdown summary."
+            "You are a travel budget specialist. Based on these constraints: {constraints} and the typical costs context: {budget_data}, estimate the total trip cost. Include transportation, accommodation, activities, local transport, and contingency. Keep your response extremely concise (max 150 words) and output a clear markdown summary."
         )
         system_prompt = system_prompt.replace("{constraints}", json.dumps(constraints, ensure_ascii=False)).replace("{budget_data}", budget_data)
         

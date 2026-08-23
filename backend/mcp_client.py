@@ -12,7 +12,7 @@ async def fallback_tavily_search(query: str, api_key: str) -> str:
     payload = {
         "api_key": api_key,
         "query": query,
-        "max_results": 5
+        "max_results": 3  # Limit results to keep token count low
     }
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -25,9 +25,9 @@ async def fallback_tavily_search(query: str, api_key: str) -> str:
                 return "No search results found."
             
             res_str = ""
-            for r in results:
+            for r in results[:3]:
                 title = r.get("title", "No Title")
-                content = r.get("content", "")
+                content = r.get("content", "")[:500]  # Truncate content snippet
                 url_str = r.get("url", "")
                 res_str += f"### {title}\nSource: {url_str}\n{content}\n\n"
             return res_str
@@ -49,7 +49,7 @@ async def tavily_mcp_search(query: str) -> str:
                 result = await session.call_tool("tavily_search", arguments={"query": query})
                 text_content = "".join([c.text for c in result.content if hasattr(c, "text")] or [str(result)])
                 if text_content.strip():
-                    return text_content
+                    return text_content[:1200]  # Truncate result context
                 return await fallback_tavily_search(query, api_key)
     except Exception as e:
         print(f"[TAVILY MCP] SSE connection failed ({str(e)}). Falling back to direct REST API...")
