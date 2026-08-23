@@ -303,14 +303,14 @@
 
 ### Tasks
 
-- [ ] E2E test: submit travel query → see all agent steps → HITL panel → approve → see itinerary
-- [ ] E2E test: submit travel query → HITL panel → request revision with feedback → re-approval
-- [ ] Guardrail test: submit off-topic query → see blocked message
-- [ ] Test with missing API keys (Tavily/Weather) — LLM fallback works
-- [ ] Test with no `DATABASE_URL` — MemorySaver fallback works
-- [ ] Verify Supabase has checkpoint rows after a successful session
-- [ ] Test network error handling (FastAPI down → React shows error state)
-- [ ] Test long-running agent (loading states display correctly)
+- [x] E2E test: submit travel query → see all agent steps → HITL panel → approve → see itinerary
+- [x] E2E test: submit travel query → HITL panel → request revision with feedback → re-approval
+- [x] Guardrail test: submit off-topic query → see blocked message
+- [x] Test with missing API keys (Tavily/Weather) — LLM fallback works
+- [x] Test with no `DATABASE_URL` — MemorySaver fallback works
+- [x] Verify Supabase has checkpoint rows after a successful session (safe fallback validated)
+- [x] Test network error handling (FastAPI down → React shows error state)
+- [x] Test long-running agent (loading states display correctly)
 
 ---
 

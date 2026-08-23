@@ -235,6 +235,26 @@ python custom_weather_mcp_server.py
 
 ---
 
+### 🐳 Running with Docker Compose (Recommended)
+
+To run the entire application using Docker Compose:
+
+1. Make sure you have **Docker** and **Docker Compose** installed.
+2. Ensure you have created your `backend/.env` file with at least `GROQ_API_KEY` (or `GROQ_API_KEY_FALLBACK`) defined.
+3. Build and launch the containers:
+   ```bash
+   docker compose up --build
+   ```
+4. The services will be accessible at:
+   - Frontend React app: `http://localhost:3000` (proxies `/api` to the backend)
+   - Backend FastAPI server: `http://localhost:8000`
+5. To stop the containers:
+   ```bash
+   docker compose down
+   ```
+
+---
+
 ## 🎯 Usage
 
 ```mermaid

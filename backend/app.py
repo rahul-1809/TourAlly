@@ -1,6 +1,8 @@
 import os
+import time
 import nest_asyncio
 from fastapi import FastAPI, HTTPException, Request
+from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
@@ -22,6 +24,25 @@ app = FastAPI(
 
 @app.on_event("startup")
 async def startup_event():
+    # ─── Environment Validation ───
+    groq_key = os.getenv("GROQ_API_KEY") or os.getenv("GROQ_API_KEY_FALLBACK")
+    if not groq_key:
+        print("❌ CRITICAL ERROR: GROQ_API_KEY or GROQ_API_KEY_FALLBACK environment variable is missing!")
+        print("Please check your backend/.env configuration.")
+        raise RuntimeError("Missing required GROQ_API_KEY configuration.")
+
+    print("✅ Environment Validation Passed: Groq API Key is configured.")
+
+    optional_keys = {
+        "AVIATION_STACK_API_KEY": "Aviation Stack Flight API integration",
+        "TAVILY_API_KEY": "Tavily Web Search hotel & budget integration",
+        "OPENWEATHER_API_KEY": "OpenWeather API custom weather MCP integration",
+        "LANGCHAIN_API_KEY": "LangSmith execution observability tracing"
+    }
+    for key, desc in optional_keys.items():
+        if not os.getenv(key):
+            print(f"⚠️ Warning: Optional environment variable {key} is missing. {desc} will be disabled.")
+
     db_url = os.getenv("DATABASE_URL")
     if db_url:
         print("Initializing PostgresSaver checkpointer database...")
@@ -46,6 +67,21 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Custom telemetry request logging middleware
+class RequestLoggingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        start_time = time.time()
+        response = await call_next(request)
+        process_time = (time.time() - start_time) * 1000
+        print(
+            f"📥 Request: {request.method} {request.url.path} | "
+            f"Response Status: {response.status_code} | "
+            f"Duration: {process_time:.2f}ms"
+        )
+        return response
+
+app.add_middleware(RequestLoggingMiddleware)
 
 # ─── Pydantic Request Models ──────────────────────────────────
 class TravelRequest(BaseModel):

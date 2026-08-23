@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react'
 import { startTrip, approveTrip, checkHealth } from './api/travel'
+import { marked } from 'marked'
 import './App.css'
+
+const SPECIALIST_BADGES = {
+  flight_agent: { label: 'Flight', icon: '✈️' },
+  hotel_agent: { label: 'Hotel', icon: '🏨' },
+  weather_agent: { label: 'Weather', icon: '🌤️' },
+  budget_agent: { label: 'Budget', icon: '💰' }
+}
 
 function App() {
   // Top-level Application State
@@ -72,7 +80,7 @@ function App() {
           appendLog('error', `🚫 Guardrail Blocked: ${res.content}`)
         } else if (res.status === 'awaiting_approval') {
           setStatus('awaiting_approval')
-          setItinerary(res.content)
+          setItinerary(res.itinerary || res.content)
           appendLog('agent', '🤖 Supervisor: Routed query to specialists successfully.')
           appendLog('agent', `💼 Running specialist processes: ${res.agents_run.filter(a => a !== 'supervisor_agent' && a !== 'itinerary_agent').join(', ')}`)
           appendLog('agent', '📝 Itinerary Agent: Day-by-day plan draft compiled.')
@@ -96,14 +104,18 @@ function App() {
     setStatus('loading')
     const actionText = approved ? 'Confirming approval...' : 'Submitting change request...'
     appendLog('system', `HITL Checkpoint: ${actionText}`)
+    if (!approved && feedback.trim()) {
+      appendLog('user', `💬 Submitted Human Feedback: "${feedback.trim()}"`)
+    }
 
     approveTrip(threadId, approved, approved ? "" : feedback)
       .then(res => {
         setAgentsRun(res.agents_run || [])
+        setFeedback("") // Reset feedback textarea
         
         if (res.status === 'awaiting_approval') {
           setStatus('awaiting_approval')
-          setItinerary(res.content)
+          setItinerary(res.itinerary || res.content)
           appendLog('alert', '⚠️ Checkpoint Interrupted: Revised draft paused awaiting review.')
         } else if (res.status === 'completed') {
           setStatus('completed')
@@ -111,7 +123,7 @@ function App() {
           appendLog('system', '✅ Itinerary finalized successfully!')
         } else {
           setStatus(res.status)
-          setItinerary(res.content)
+          setItinerary(res.itinerary || res.content)
         }
       })
       .catch(err => {
@@ -129,24 +141,11 @@ function App() {
     setFeedback("")
   }
 
-  // Simple, robust Markdown Formatter
+  // Marked library compiler wrapper
   const formatMarkdown = (mdText) => {
     if (!mdText) return null
-    return mdText.split('\n').map((line, i) => {
-      if (line.startsWith('# ')) {
-        return <h1 key={i} className="md-h1">{line.substring(2)}</h1>
-      }
-      if (line.startsWith('## ')) {
-        return <h2 key={i} className="md-h2">{line.substring(3)}</h2>
-      }
-      if (line.startsWith('### ')) {
-        return <h3 key={i} className="md-h3">{line.substring(4)}</h3>
-      }
-      if (line.startsWith('- ') || line.startsWith('* ')) {
-        return <li key={i} className="md-li">{line.substring(2)}</li>
-      }
-      return <p key={i} className="md-p">{line}</p>
-    })
+    const htmlContent = marked.parse(mdText)
+    return <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
   }
 
   return (
@@ -336,11 +335,24 @@ function App() {
                 <div className="step-dot">👁️</div>
                 <span className="step-label">Supervisor</span>
               </div>
-              <div className={`step-item ${agentsRun.length > 2 ? 'completed' : ''}`}>
+              <div className={`step-item ${agentsRun.length > 2 || agentsRun.some(a => SPECIALIST_BADGES[a]) ? 'completed' : ''}`}>
                 <div className="step-dot">🤖</div>
                 <span className="step-label">Specialists</span>
+                {agentsRun.some(a => SPECIALIST_BADGES[a]) && (
+                  <div className="active-specialist-badges">
+                    {agentsRun.map(a => {
+                      const badge = SPECIALIST_BADGES[a];
+                      if (!badge) return null;
+                      return (
+                        <span key={a} className={`specialist-badge badge-${a.replace('_', '-')}`}>
+                          {badge.icon} {badge.label}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-              <div className={`step-item ${status === 'awaiting_approval' ? 'active' : status === 'completed' ? 'completed' : ''}`}>
+              <div className={`step-item ${status === 'awaiting_approval' ? 'active' : (status === 'completed' && agentsRun.includes('itinerary_agent')) ? 'completed' : ''}`}>
                 <div className="step-dot">✍️</div>
                 <span className="step-label">Human Review</span>
               </div>

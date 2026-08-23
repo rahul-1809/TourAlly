@@ -36,6 +36,7 @@ class TravelState(TypedDict, total=False):
     selected_agents: list[str]
     trip_constraints: dict[str, Any]
     supervisor_reasoning: str
+    intent_mode: str  # "trip_planning" or "direct_query"
     flight_results: str
     hotel_results: str
     weather_results: str
@@ -57,11 +58,11 @@ SPECIALIST_NAMES = {
 
 
 def get_llm() -> ChatGroq:
-    api_key = os.getenv("GROQ_API_KEY")
+    api_key = os.getenv("GROQ_API_KEY") or os.getenv("GROQ_API_KEY_FALLBACK")
     if not api_key:
-        raise ValueError("GROQ_API_KEY is not set in .env")
+        raise ValueError("Neither GROQ_API_KEY nor GROQ_API_KEY_FALLBACK is set in the environment")
 
-    model_name = os.getenv("GROQ_MODEL", "groq/compound")
+    model_name = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 
     return ChatGroq(
         model=model_name,
@@ -191,6 +192,9 @@ def supervisor_node(state: TravelState) -> dict[str, Any]:
 
     supervisor_system = (
         "You are a travel coordinator supervisor. Analyze the user's travel request.\n"
+        "First, classify the user's intent as either:\n"
+        "- \"trip_planning\": if they request a multi-day itinerary or trip plan.\n"
+        "- \"direct_query\": if they only ask a single-topic question, e.g., checking weather at a destination, searching flight options between airports, or listing hotel options, and do NOT request a multi-day itinerary.\n\n"
         "Select only the specialist agents actually required. Available specialists are:\n"
         "- flight_agent: routes, ticket information, schedules\n"
         "- hotel_agent: accommodation and locations\n"
@@ -198,7 +202,8 @@ def supervisor_node(state: TravelState) -> dict[str, Any]:
         "- budget_agent: total trip cost estimation\n\n"
         "Extract these trip constraints: destination, origin, duration, budget, travel_style.\n"
         "Respond ONLY with valid JSON in exactly this structure:\n"
-        '{"selected_agents": ["flight_agent"], '
+        '{"intent_mode": "trip_planning", '
+        '"selected_agents": ["flight_agent"], '
         '"trip_constraints": {"destination": "...", "origin": "...", '
         '"duration": "...", "budget": "...", "travel_style": "..."}, '
         '"reasoning": "..."}'
@@ -216,6 +221,10 @@ def supervisor_node(state: TravelState) -> dict[str, Any]:
         if agent in SPECIALIST_NAMES
     ]
 
+    intent_mode = supervisor_json.get("intent_mode", "trip_planning")
+    if intent_mode not in ("trip_planning", "direct_query"):
+        intent_mode = "trip_planning"
+
     constraints = supervisor_json.get("trip_constraints")
     if not isinstance(constraints, dict):
         constraints = _empty_constraints()
@@ -230,6 +239,7 @@ def supervisor_node(state: TravelState) -> dict[str, Any]:
         "selected_agents": selected_agents,
         "trip_constraints": normalized_constraints,
         "supervisor_reasoning": supervisor_json.get("reasoning", ""),
+        "intent_mode": intent_mode,
         "llm_calls": state.get("llm_calls", 0) + 2,
     }
 
@@ -319,10 +329,15 @@ Budget Estimate:
 {state.get("budget_results", "Not requested")}
 """
 
+    print(f"📝 [Itinerary Agent] Synthesizing day-by-day plan. Human feedback received: '{feedback}'")
+
     if feedback:
         prompt_content += (
-            f"\nPrevious human revision feedback:\n{feedback}\n"
-            "Revise the itinerary using this feedback."
+            f"\n⚠️ CRITICAL REVISION REQUEST FROM HUMAN ADVISOR:\n"
+            f"Please revise the previous draft itinerary strictly incorporating the following feedback:\n"
+            f"\"{feedback}\"\n\n"
+            f"You MUST adjust the hotels, flights, budget, schedules, or other elements of the travel plan "
+            f"to satisfy this request."
         )
 
     system_prompt = (
@@ -518,6 +533,37 @@ def specialists_node(state: TravelState) -> dict[str, Any]:
     return updates
 
 
+def direct_response_node(state: TravelState) -> dict[str, Any]:
+    selected = state.get("selected_agents", [])
+    results = []
+
+    # Map selected agents to their respective results fields
+    if "flight_agent" in selected and state.get("flight_results"):
+        results.append(f"### ✈️ Flight Recommendations\n{state['flight_results']}")
+    if "hotel_agent" in selected and state.get("hotel_results"):
+        results.append(f"### 🏨 Accommodation Options\n{state['hotel_results']}")
+    if "weather_agent" in selected and state.get("weather_results"):
+        results.append(f"### 🌤️ Weather Forecast\n{state['weather_results']}")
+    if "budget_agent" in selected and state.get("budget_results"):
+        results.append(f"### 💰 Budget & Cost Analysis\n{state['budget_results']}")
+
+    if results:
+        final_text = "\n\n---\n\n".join(results)
+    else:
+        final_text = "No results compiled for your direct query."
+
+    return {
+        "final_response": final_text,
+        "approved": True
+    }
+
+
+def route_after_specialists(state: TravelState) -> str:
+    if state.get("intent_mode") == "direct_query":
+        return "direct_response"
+    return "itinerary_agent"
+
+
 def route_after_hitl(state: TravelState) -> str:
     if state.get("approved") is True:
         return "finalize"
@@ -528,6 +574,7 @@ workflow = StateGraph(TravelState)
 
 workflow.add_node("supervisor_agent", supervisor_node)
 workflow.add_node("specialists", specialists_node)
+workflow.add_node("direct_response", direct_response_node)
 workflow.add_node("itinerary_agent", itinerary_node)
 workflow.add_node("hitl_approval", hitl_node)
 workflow.add_node("finalize", finalize_node)
@@ -544,7 +591,15 @@ workflow.add_conditional_edges(
     },
 )
 
-workflow.add_edge("specialists", "itinerary_agent")
+workflow.add_conditional_edges(
+    "specialists",
+    route_after_specialists,
+    {
+        "direct_response": "direct_response",
+        "itinerary_agent": "itinerary_agent"
+    }
+)
+workflow.add_edge("direct_response", END)
 workflow.add_edge("itinerary_agent", "hitl_approval")
 
 workflow.add_conditional_edges(
@@ -645,7 +700,10 @@ def run_travel_agent(
                 "agents_run": (
                     ["supervisor_agent"]
                     + state.values.get("selected_agents", [])
-                    + ["itinerary_agent", "finalize"]
+                    + (
+                        [] if state.values.get("intent_mode") == "direct_query"
+                        else ["itinerary_agent", "finalize"]
+                    )
                 ),
             }
     except Exception as e:
@@ -667,6 +725,8 @@ def resume_travel_agent(
     feedback: str = "",
 ) -> dict[str, Any]:
     config = {"configurable": {"thread_id": thread_id}}
+
+    print(f"🔄 [HITL Resume] Resuming thread {thread_id} | approved={approved} | feedback='{feedback}'")
 
     try:
         with get_graph() as graph:
