@@ -37,6 +37,9 @@ class TravelState(TypedDict, total=False):
     trip_constraints: dict[str, Any]
     supervisor_reasoning: str
     intent_mode: str  # "trip_planning" or "direct_query"
+    origin_currency: str
+    destination_currency: str
+    exchange_rate: float
     flight_results: str
     hotel_results: str
     weather_results: str
@@ -129,6 +132,91 @@ def _empty_constraints() -> dict[str, Any]:
         "budget": "",
         "travel_style": "",
     }
+
+
+CURRENCY_MAP = {
+    "london": "GBP",
+    "uk": "GBP",
+    "united kingdom": "GBP",
+    "paris": "EUR",
+    "france": "EUR",
+    "tokyo": "JPY",
+    "japan": "JPY",
+    "india": "INR",
+    "delhi": "INR",
+    "mumbai": "INR",
+    "bangalore": "INR",
+    "new york": "USD",
+    "america": "USD",
+    "united states": "USD",
+    "usa": "USD",
+    "canada": "CAD",
+    "toronto": "CAD",
+    "australia": "AUD",
+    "sydney": "AUD",
+    "melbourne": "AUD",
+    "germany": "EUR",
+    "berlin": "EUR",
+    "italy": "EUR",
+    "rome": "EUR",
+    "spain": "EUR",
+    "madrid": "EUR",
+    "singapore": "SGD",
+    "dubai": "AED",
+    "uae": "AED",
+}
+
+def get_currency_for_location(location: str) -> str:
+    if not location:
+        return "USD"
+    loc_lower = location.lower().strip()
+    
+    # Check static map
+    for key, code in CURRENCY_MAP.items():
+        if key in loc_lower:
+            return code
+            
+    # Fallback to LLM
+    try:
+        res = _llm_text(
+            "You are a currency resolver. Based on the given city or country, respond with ONLY its standard ISO 4217 three-letter currency code (e.g. USD, EUR, GBP, JPY, INR). Do not include any formatting, punctuation, or other text.",
+            f"Location: {location}"
+        )
+        code = res.strip().upper()
+        if len(code) == 3 and code.isalpha():
+            return code
+    except Exception:
+        pass
+        
+    return "USD"
+
+
+def get_exchange_rate(from_currency: str, to_currency: str) -> float:
+    import urllib.request
+    
+    api_key = os.getenv("EXCHANGE_RATE_API_KEY")
+    if not api_key:
+        print("⚠️ Warning: EXCHANGE_RATE_API_KEY is not set in the environment.")
+        return 1.0
+        
+    if from_currency.upper() == to_currency.upper():
+        return 1.0
+        
+    url = f"https://v6.exchangerate-api.com/v6/{api_key}/latest/{to_currency.upper()}"
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=5) as response:
+            data = json.loads(response.read().decode())
+            if data.get("result") == "success":
+                rates = data.get("conversion_rates", {})
+                rate = rates.get(from_currency.upper())
+                if rate is not None:
+                    print(f"📊 Live exchange rate: 1 {to_currency.upper()} = {rate} {from_currency.upper()}")
+                    return float(rate)
+    except Exception as e:
+        print(f"⚠️ Error fetching exchange rate from API: {e}")
+        
+    return 1.0
 
 
 def _get_user_query(state: TravelState) -> str:
@@ -232,6 +320,10 @@ def supervisor_node(state: TravelState) -> dict[str, Any]:
     normalized_constraints = _empty_constraints()
     normalized_constraints.update(constraints)
 
+    origin_currency = get_currency_for_location(normalized_constraints.get("origin", ""))
+    destination_currency = get_currency_for_location(normalized_constraints.get("destination", ""))
+    exchange_rate = get_exchange_rate(origin_currency, destination_currency)
+
     return {
         "user_query": user_query,
         "guardrail_allowed": True,
@@ -240,6 +332,9 @@ def supervisor_node(state: TravelState) -> dict[str, Any]:
         "trip_constraints": normalized_constraints,
         "supervisor_reasoning": supervisor_json.get("reasoning", ""),
         "intent_mode": intent_mode,
+        "origin_currency": origin_currency,
+        "destination_currency": destination_currency,
+        "exchange_rate": exchange_rate,
         "llm_calls": state.get("llm_calls", 0) + 2,
     }
 
@@ -308,6 +403,9 @@ def itinerary_node(state: TravelState) -> dict[str, Any]:
     user_query = state.get("user_query", "")
     constraints = state.get("trip_constraints", {})
     feedback = state.get("human_feedback", "")
+    origin_currency = state.get("origin_currency", "USD")
+    destination_currency = state.get("destination_currency", "USD")
+    exchange_rate = state.get("exchange_rate", 1.0)
 
     prompt_content = f"""
 User Request:
@@ -344,12 +442,22 @@ Budget Estimate:
         "You are a master travel planner. Synthesize the provided information into "
         "a cohesive day-by-day itinerary. Use detailed Markdown, clean headings, "
         "bold text, bullet lists, and emojis. Do not claim that an external booking "
-        "or weather API was checked unless the input explicitly contains such data.\n\n"
+        "or weather API was checked unless the input explicitly contains such data.\n"
+        "CRITICAL INSTRUCTION: The traveler's origin currency is '{origin_currency}' and the destination currency is '{destination_currency}'. "
+        "You MUST display all monetary values, price ranges, daily costs, and the final budget breakdown table STRICTLY in the traveler's home currency '{origin_currency}' (using standard symbols like $, £, €, ₹). "
+        "Do NOT use the destination currency '{destination_currency}' for any prices. "
+        "The conversion rate is: 1 {destination_currency} = {exchange_rate} {origin_currency}.\n\n"
         "Separate the response using exactly these boundaries:\n"
         "--- ITINERARY_START ---\n"
         "[Detailed Markdown Itinerary]\n"
         "--- SUMMARY_START ---\n"
         "[Short Summary for Approval]"
+    )
+    system_prompt = (
+        system_prompt
+        .replace("{origin_currency}", origin_currency)
+        .replace("{destination_currency}", destination_currency)
+        .replace("{exchange_rate}", str(exchange_rate))
     )
 
     result = _llm_text(system_prompt, prompt_content)
@@ -517,10 +625,27 @@ def specialists_node(state: TravelState) -> dict[str, Any]:
             except Exception as e:
                 budget_data = f"Error fetching budget data: {e}"
                 
+        origin_currency = state.get("origin_currency", "USD")
+        destination_currency = state.get("destination_currency", "USD")
+        exchange_rate = state.get("exchange_rate", 1.0)
+        
         system_prompt = (
-            "You are a travel budget specialist. Based on these constraints: {constraints} and the typical costs context: {budget_data}, estimate the total trip cost. Include transportation, accommodation, activities, local transport, and contingency. Keep your response extremely concise (max 150 words) and output a clear markdown summary."
+            "You are a travel budget specialist. Based on these constraints: {constraints} and the typical costs context: {budget_data}, estimate the total trip cost. Include transportation, accommodation, activities, local transport, and contingency.\n"
+            "CRITICAL INSTRUCTION: The traveler's origin is '{origin}' (Currency: {origin_currency}) and the destination is '{destination}' (Currency: {destination_currency}). "
+            "You MUST present the entire budget estimation, daily breakdown, and item costs STRICTLY in the traveler's home currency '{origin_currency}' (symbol/format). "
+            "Use the conversion rate: 1 {destination_currency} = {exchange_rate} {origin_currency} to convert any local destination prices into {origin_currency} before summarizing them.\n"
+            "Keep your response extremely concise (max 180 words) and output a clear markdown summary."
         )
-        system_prompt = system_prompt.replace("{constraints}", json.dumps(constraints, ensure_ascii=False)).replace("{budget_data}", budget_data)
+        system_prompt = (
+            system_prompt
+            .replace("{constraints}", json.dumps(constraints, ensure_ascii=False))
+            .replace("{budget_data}", budget_data)
+            .replace("{origin}", constraints.get("origin", ""))
+            .replace("{destination}", constraints.get("destination", ""))
+            .replace("{origin_currency}", origin_currency)
+            .replace("{destination_currency}", destination_currency)
+            .replace("{exchange_rate}", str(exchange_rate))
+        )
         
         result = _llm_text(
             system_prompt,
