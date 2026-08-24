@@ -1,7 +1,7 @@
 # TourAlly — Phase-Wise Implementation Plan
 
 > **Project**: Multi-Agent Travel Planner (LangGraph + MCP + Supervisor + Guardrails + HITL)
-> **Stack**: FastAPI (Python) · React + Vite · Supabase (PostgreSQL) · Groq LLaMA-3.3-70b · MCP
+> **Stack**: FastAPI (Python) · React + Vite · Supabase (PostgreSQL) · Groq gpt-oss-120b · MCP
 
 ---
 
@@ -71,7 +71,7 @@
   - `llm_calls`
 
 #### 1.2 — LLM Helper Functions
-- [x] `_llm_text(system_prompt, user_prompt)` → invoke Groq LLaMA
+- [x] `_llm_text(system_prompt, user_prompt)` → invoke Groq LLM
 - [x] `_json_from_llm(text)` → extract first valid JSON object from LLM response
 - [x] `_empty_constraints()` → default trip constraints dict
 
@@ -322,15 +322,14 @@
 
 ### Tasks
 
-- [ ] Create `Dockerfile` for backend (multi-stage)
-- [ ] Create `docker-compose.yml` (backend + frontend build)
-- [ ] Add `frontend/nginx.conf` for serving React build
-- [ ] Add environment validation on startup (clear error messages for missing keys)
-- [ ] Add request logging middleware
-- [ ] SEO: add `<meta>` tags, title, description to `frontend/index.html`
-- [ ] Add `CONTRIBUTING.md`
-- [ ] Finalize `README.md` with full setup instructions
-- [ ] Add `backend/migrations/README.md` explaining how to run migrations
+- [x] Create `Dockerfile` for backend (multi-stage)
+- [x] Create `docker-compose.yml` (backend + frontend build)
+- [x] Add `frontend/nginx.conf` for serving React build
+- [x] Add environment validation on startup (clear error messages for missing keys)
+- [x] Add request logging middleware
+- [x] SEO: add `<meta>` tags, title, description to `frontend/index.html`
+- [x] Finalize `README.md` with full setup instructions
+- [x] Add `backend/migrations/README.md` explaining how to run migrations
 
 ### Acceptance Criteria
 - `docker compose up` starts both services

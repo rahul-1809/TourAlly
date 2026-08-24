@@ -2,7 +2,7 @@
 
 > **Project**: Multi-Agent AI Travel Planner
 > **Version**: 1.0.0
-> **Stack**: FastAPI · React + Vite · LangGraph · MCP · Supabase · Groq LLaMA-3.3-70b · LangSmith
+> **Stack**: FastAPI · React + Vite · LangGraph · MCP · Supabase · Groq gpt-oss-120b · LangSmith
 
 ---
 
@@ -36,7 +36,7 @@ flowchart TB
     end
 
     subgraph LLM_LAYER ["LLM LAYER"]
-        Groq["🤖 Groq API\nLLaMA-3.3-70b"]
+        Groq["🤖 Groq API\ngpt-oss-120b"]
     end
 
     subgraph DB ["PERSISTENCE LAYER"]
@@ -120,6 +120,10 @@ class TravelState(TypedDict, total=False):
     selected_agents: list[str]
     trip_constraints: dict[str, Any]
     supervisor_reasoning: str
+    intent_mode: str  # "trip_planning" or "direct_query"
+    origin_currency: str
+    destination_currency: str
+    exchange_rate: float
 
     # Specialist results
     flight_results: str
@@ -468,7 +472,7 @@ flowchart LR
 
 | Layer | Technology | Version | Purpose |
 |---|---|---|---|
-| **LLM** | Groq LLaMA-3.3-70b | via API | All LLM inference |
+| **LLM** | Groq gpt-oss-120b | via API | All LLM inference |
 | **Agent Graph** | LangGraph | 1.2.x | State machine + HITL |
 | **LLM Framework** | LangChain | 1.3.x | LLM abstraction |
 | **Observability** | LangSmith | via API | Tracing, evaluation, debugging |
