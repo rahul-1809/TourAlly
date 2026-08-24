@@ -71,7 +71,7 @@ function App() {
     // Log initiation sequence
     setMessages([
       { type: 'system', text: `Initiated session with query: "${messageToSend}"`, time: new Date().toLocaleTimeString() },
-      { type: 'system', text: '🔍 Guardrail checking query parameters...', time: new Date().toLocaleTimeString() }
+      { type: 'system', text: 'Guardrail checking query parameters...', time: new Date().toLocaleTimeString() }
     ])
     
     startTrip(messageToSend, threadId)
@@ -81,18 +81,18 @@ function App() {
 
         if (res.status === 'blocked') {
           setStatus('blocked')
-          appendLog('error', `🚫 Guardrail Blocked: ${res.content}`)
+          appendLog('error', `Guardrail Blocked: ${res.content}`)
         } else if (res.status === 'awaiting_approval') {
           setStatus('awaiting_approval')
           setItinerary(res.itinerary || res.content)
-          appendLog('agent', '🤖 Supervisor: Routed query to specialists successfully.')
-          appendLog('agent', `💼 Running specialist processes: ${res.agents_run.filter(a => a !== 'supervisor_agent' && a !== 'itinerary_agent').join(', ')}`)
-          appendLog('agent', '📝 Itinerary Agent: Day-by-day plan draft compiled.')
-          appendLog('alert', '⚠️ Checkpoint Interrupted: Draft paused awaiting human review.')
+          appendLog('agent', 'Supervisor: Routed query to specialists successfully.')
+          appendLog('agent', `Running specialist processes: ${res.agents_run.filter(a => a !== 'supervisor_agent' && a !== 'itinerary_agent').join(', ')}`)
+          appendLog('agent', 'Itinerary Agent: Day-by-day plan draft compiled.')
+          appendLog('alert', 'Checkpoint Interrupted: Draft paused awaiting human review.')
         } else if (res.status === 'completed') {
           setStatus('completed')
           setItinerary(res.content)
-          appendLog('system', '✅ Journey planning complete! Enjoy your trip.')
+          appendLog('system', 'Journey planning complete.')
         }
       })
       .catch(err => {
@@ -109,7 +109,7 @@ function App() {
     const actionText = approved ? 'Confirming approval...' : 'Submitting change request...'
     appendLog('system', `HITL Checkpoint: ${actionText}`)
     if (!approved && feedback.trim()) {
-      appendLog('user', `💬 Submitted Human Feedback: "${feedback.trim()}"`)
+      appendLog('user', `Submitted Human Feedback: "${feedback.trim()}"`)
     }
 
     approveTrip(threadId, approved, approved ? "" : feedback)
@@ -120,11 +120,11 @@ function App() {
         if (res.status === 'awaiting_approval') {
           setStatus('awaiting_approval')
           setItinerary(res.itinerary || res.content)
-          appendLog('alert', '⚠️ Checkpoint Interrupted: Revised draft paused awaiting review.')
+          appendLog('alert', 'Checkpoint Interrupted: Revised draft paused awaiting review.')
         } else if (res.status === 'completed') {
           setStatus('completed')
           setItinerary(res.content)
-          appendLog('system', '✅ Itinerary finalized successfully!')
+          appendLog('system', 'Itinerary finalized successfully!')
         } else {
           setStatus(res.status)
           setItinerary(res.itinerary || res.content)
