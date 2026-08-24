@@ -529,3 +529,102 @@
   border-color: rgba(52, 211, 153, 0.2);
 }
 
+/* PDF Download Button Styling */
+.btn-download-pdf {
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  color: #c7d2fe;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-download-pdf:hover {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: rgba(99, 102, 241, 0.5);
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.2);
+}
+
+/* Print Stylesheet for PDF Output */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #111111 !important;
+    font-family: 'Inter', sans-serif !important;
+  }
+  
+  /* Hide all interactive app chrome */
+  .header, 
+  .left-column, 
+  .steps-panel, 
+  .hitl-panel, 
+  .itinerary-actions, 
+  .suggestion-chips,
+  .health-badge,
+  .reset-btn {
+    display: none !important;
+  }
+  
+  .app-container {
+    background: none !important;
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  .workspace-grid {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  /* Make the itinerary panel cover the full width of the paper */
+  .itinerary-panel {
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    display: block !important;
+  }
+  
+  .itinerary-content {
+    color: #111111 !important;
+  }
+  
+  .itinerary-content h1, 
+  .itinerary-content h2, 
+  .itinerary-content h3,
+  .itinerary-content strong,
+  .itinerary-content li,
+  .itinerary-content p {
+    color: #111111 !important;
+  }
+  
+  .itinerary-content table {
+    border: 1px solid #dddddd !important;
+    background: none !important;
+    color: #111111 !important;
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+  
+  .itinerary-content th {
+    background: #f5f5f5 !important;
+    color: #111111 !important;
+    border-bottom: 2px solid #dddddd !important;
+    padding: 8px 12px !important;
+  }
+  
+  .itinerary-content td {
+    border-bottom: 1px solid #eeeeee !important;
+    color: #333333 !important;
+    padding: 8px 12px !important;
+  }
+}
+

@@ -4,10 +4,10 @@ import { marked } from 'marked'
 import './App.css'
 
 const SPECIALIST_BADGES = {
-  flight_agent: { label: 'Flight', icon: '✈️' },
-  hotel_agent: { label: 'Hotel', icon: '🏨' },
-  weather_agent: { label: 'Weather', icon: '🌤️' },
-  budget_agent: { label: 'Budget', icon: '💰' }
+  flight_agent: { label: 'Flight' },
+  hotel_agent: { label: 'Hotel' },
+  weather_agent: { label: 'Weather' },
+  budget_agent: { label: 'Budget' }
 }
 
 function App() {
@@ -18,6 +18,10 @@ function App() {
   const [itinerary, setItinerary] = useState("")
   const [agentsRun, setAgentsRun] = useState([])
   const [feedback, setFeedback] = useState("")
+
+  const handleDownloadPDF = () => {
+    window.print()
+  }
   
   // Health connection state
   const [health, setHealth] = useState({
@@ -153,7 +157,9 @@ function App() {
       {/* Header Panel */}
       <header className="header">
         <div className="logo-section">
-          <span className="logo-icon">✈️</span>
+          <svg className="logo-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '22px', height: '22px', marginRight: '8px', color: '#818cf8' }}>
+            <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+          </svg>
           <span className="logo-text gradient-text">TourAlly</span>
         </div>
         
@@ -207,7 +213,7 @@ function App() {
           
           {/* Conversational Travel Prompt Input */}
           <section className="glass-panel trip-form-panel">
-            <h2 className="panel-title">💬 Plan Your Journey</h2>
+            <h2 className="panel-title">Plan Your Journey</h2>
             <form onSubmit={handleSubmit}>
               <div className="form-field" style={{ marginBottom: '16px' }}>
                 <label className="form-label" style={{ marginBottom: '8px' }}>Ask anything or describe your trip</label>
@@ -236,7 +242,7 @@ function App() {
                     cursor: 'pointer'
                   }}
                 >
-                  🗼 3-Day Paris from London ($1500)
+                  3-Day Paris from London ($1500)
                 </button>
                 <button 
                   type="button" 
@@ -252,7 +258,7 @@ function App() {
                     cursor: 'pointer'
                   }}
                 >
-                  🌤️ Weather in Tokyo
+                  Weather in Tokyo
                 </button>
                 <button 
                   type="button" 
@@ -268,7 +274,7 @@ function App() {
                     cursor: 'pointer'
                   }}
                 >
-                  🤡 Programming Joke (Guardrail Test)
+                  Programming Joke (Guardrail Test)
                 </button>
                 <button 
                   type="button" 
@@ -284,7 +290,7 @@ function App() {
                     cursor: 'pointer'
                   }}
                 >
-                  ✈️ Flights LHR ➔ CDG
+                  Flights LHR ➔ CDG
                 </button>
               </div>
 
@@ -300,7 +306,7 @@ function App() {
 
           {/* Console / Agent Logs Stream */}
           <section className="glass-panel console-panel">
-            <h2 className="panel-title">📟 Agent Pipeline Logs</h2>
+            <h2 className="panel-title">Agent Pipeline Logs</h2>
             <div className="log-stream">
               {messages.length === 0 ? (
                 <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: 'auto', textAlign: 'center' }}>
@@ -328,15 +334,15 @@ function App() {
           <section className="glass-panel steps-panel">
             <div className="steps-list">
               <div className={`step-item ${status !== 'idle' ? 'completed' : ''}`}>
-                <div className="step-dot">🛡️</div>
+                <div className="step-dot">1</div>
                 <span className="step-label">Guardrail</span>
               </div>
               <div className={`step-item ${agentsRun.includes('supervisor_agent') ? 'completed' : ''}`}>
-                <div className="step-dot">👁️</div>
+                <div className="step-dot">2</div>
                 <span className="step-label">Supervisor</span>
               </div>
               <div className={`step-item ${agentsRun.length > 2 || agentsRun.some(a => SPECIALIST_BADGES[a]) ? 'completed' : ''}`}>
-                <div className="step-dot">🤖</div>
+                <div className="step-dot">3</div>
                 <span className="step-label">Specialists</span>
                 {agentsRun.some(a => SPECIALIST_BADGES[a]) && (
                   <div className="active-specialist-badges">
@@ -345,7 +351,7 @@ function App() {
                       if (!badge) return null;
                       return (
                         <span key={a} className={`specialist-badge badge-${a.replace('_', '-')}`}>
-                          {badge.icon} {badge.label}
+                          {badge.label}
                         </span>
                       );
                     })}
@@ -353,11 +359,11 @@ function App() {
                 )}
               </div>
               <div className={`step-item ${status === 'awaiting_approval' ? 'active' : (status === 'completed' && agentsRun.includes('itinerary_agent')) ? 'completed' : ''}`}>
-                <div className="step-dot">✍️</div>
+                <div className="step-dot">4</div>
                 <span className="step-label">Human Review</span>
               </div>
               <div className={`step-item ${status === 'completed' ? 'completed' : ''}`}>
-                <div className="step-dot">🎉</div>
+                <div className="step-dot">5</div>
                 <span className="step-label">Final Plan</span>
               </div>
             </div>
@@ -366,7 +372,7 @@ function App() {
           {/* Human Review Panel */}
           {status === 'awaiting_approval' && (
             <section className="glass-panel hitl-panel">
-              <h2 className="panel-title" style={{ color: '#eab308' }}>⚠️ Human-in-the-Loop Review Needed</h2>
+              <h2 className="panel-title" style={{ color: '#eab308' }}>Human-in-the-Loop Review Needed</h2>
               <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
                 Please review the draft travel plan below. You can approve it to finalize the itinerary, or request adjustments (e.g. changing hotels or adding flights).
               </p>
@@ -399,12 +405,22 @@ function App() {
                 </p>
               </div>
             ) : itinerary ? (
-              <div className="itinerary-content">
-                {formatMarkdown(itinerary)}
+              <div className="itinerary-content-wrapper">
+                <div className="itinerary-actions" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+                  <button onClick={handleDownloadPDF} className="btn-download-pdf">
+                    Download PDF
+                  </button>
+                </div>
+                <div className="itinerary-content">
+                  {formatMarkdown(itinerary)}
+                </div>
               </div>
             ) : (
               <div className="empty-itinerary-state">
-                <span className="empty-icon">🗺️</span>
+                <svg className="empty-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '48px', height: '48px', color: 'var(--text-muted)', marginBottom: '16px' }}>
+                  <circle cx="12" cy="12" r="10" />
+                  <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
+                </svg>
                 <h3>Custom Travel Planner</h3>
                 <p style={{ fontSize: '14px', maxWidth: '360px', marginTop: '8px' }}>
                   Submit leaving and destination parameters. Real-time flights, weather conditions, and hotel lists will synthesize here.
