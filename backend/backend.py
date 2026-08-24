@@ -249,10 +249,14 @@ def supervisor_node(state: TravelState) -> dict[str, Any]:
 
     guardrail_system = (
         "You are a strict travel safety guardrail. Your task is to determine whether "
-        "the user query is travel-related, such as planning a trip, booking flights, "
-        "finding hotels, checking weather, or estimating a travel budget. "
-        "If the query is travel-related, you must respond with {\"allowed\": true, \"reason\": \"Explanation\"}.\n"
-        "If the query is NOT travel-related (e.g. general questions, math, jokes, programming, etc.), you must respond with {\"allowed\": false, \"reason\": \"Explanation why it is blocked\"}.\n"
+        "the user query is strictly travel-related, such as planning a trip, booking flights/hotels, "
+        "checking weather, estimating budgets, or listing travel itineraries/activities.\n"
+        "Crucially, you must BLOCK:\n"
+        "- General tutorials or 'how-to' guides (e.g., learning how to ride a bike, swim, code, cook, or speak a language), "
+        "even if the user claims it is 'during the trip' or 'for travel'.\n"
+        "- General knowledge, jokes, programming, math, essays, or off-topic conversational fillers.\n"
+        "If the query is strictly travel-related, respond with {\"allowed\": true, \"reason\": \"Explanation\"}.\n"
+        "If it is not, respond with {\"allowed\": false, \"reason\": \"Explanation why it is blocked\"}.\n"
         "Respond ONLY with valid JSON in this format: "
         '{"allowed": true, "reason": "..."}'
     )
